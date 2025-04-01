@@ -23,7 +23,7 @@ image patches, without using convolution layers.
 """
 
 import os
-
+# 不需要管，不用
 os.environ["KERAS_BACKEND"] = "jax"  # @param ["tensorflow", "jax", "torch"]
 
 import keras
@@ -73,14 +73,14 @@ mlp_head_units = [
 """
 ## Use data augmentation
 """
-
+# 数据增强
 data_augmentation = keras.Sequential(
     [
-        layers.Normalization(),
-        layers.Resizing(image_size, image_size),
-        layers.RandomFlip("horizontal"),
-        layers.RandomRotation(factor=0.02),
-        layers.RandomZoom(height_factor=0.2, width_factor=0.2),
+        layers.Normalization(),# 标准化
+        layers.Resizing(image_size, image_size),# 调整图片大小
+        layers.RandomFlip("horizontal"),# 随机水平翻转
+        layers.RandomRotation(factor=0.02),# 以最大 2% 的角度随机旋转图像
+        layers.RandomZoom(height_factor=0.2, width_factor=0.2),# 在高度和宽度方向分别以 20% 的比例随机缩放。
     ],
     name="data_augmentation",
 )
@@ -104,7 +104,7 @@ def mlp(x, hidden_units, dropout_rate):
 ## Implement patch creation as a layer
 """
 
-
+# 定义将图像分割为小块的函数
 class Patches(layers.Layer):
     def __init__(self, patch_size):
         super().__init__()
@@ -128,7 +128,8 @@ class Patches(layers.Layer):
             ),
         )
         return patches
-
+        
+# 让 patch_size 作为超参数被保存，使得该层可以在模型保存和加载时保持不变
     def get_config(self):
         config = super().get_config()
         config.update({"patch_size": self.patch_size})
@@ -138,7 +139,7 @@ class Patches(layers.Layer):
 """
 Let's display patches for a sample image
 """
-
+# 随机选一张图片可视化，并将分割成的小块也可视化
 plt.figure(figsize=(4, 4))
 image = x_train[np.random.choice(range(x_train.shape[0]))]
 plt.imshow(image.astype("uint8"))
@@ -169,7 +170,7 @@ vector of size `projection_dim`. In addition, it adds a learnable position
 embedding to the projected vector.
 """
 
-
+# 将每个 Patch 映射到 projection_dim 维度的向量，并添加位置编码
 class PatchEncoder(layers.Layer):
     def __init__(self, num_patches, projection_dim):
         super().__init__()
@@ -238,12 +239,13 @@ def create_vit_classifier():
         x3 = mlp(x3, hidden_units=transformer_units, dropout_rate=0.1)
         # Skip connection 2.
         encoded_patches = layers.Add()([x3, x2])
-
+        
+# transformer的输出
     # Create a [batch_size, projection_dim] tensor.
     representation = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
-    representation = layers.Flatten()(representation)
+    representation = layers.Flatten()(representation) # 将输出展开为一维向量
     representation = layers.Dropout(0.5)(representation)
-    # Add MLP.
+    # Add MLP.用MLP进行分类
     features = mlp(representation, hidden_units=mlp_head_units, dropout_rate=0.5)
     # Classify outputs.
     logits = layers.Dense(num_classes)(features)
